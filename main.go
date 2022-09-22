@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/nguyentruongngoclan/learngo/handlers"
 )
 
@@ -15,8 +16,18 @@ func main() {
 	logger := log.New(os.Stdout, "product-api", log.LstdFlags)
 	productHandler := handlers.NewProduct(logger)
 
-	serveMux := http.NewServeMux()
-	serveMux.Handle("/", productHandler)
+	serveMux := mux.NewRouter()
+	// getRouter will serve only GET methods
+	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/", productHandler.GetProducts)
+	// putRouter will serve only PUT methods
+	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", productHandler.UpdateProducts)
+	putRouter.Use(productHandler.MiddlewareValidateProduct)
+	// postRouter will serve only POST methods
+	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/", productHandler.AddProduct)
+	postRouter.Use(productHandler.MiddlewareValidateProduct)
 
 	server := &http.Server{
 		Addr:         ":9090",
