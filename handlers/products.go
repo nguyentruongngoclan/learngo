@@ -5,53 +5,37 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/nguyentruongngoclan/learngo/data"
 )
 
+// A list of products returns in the response
+// swagger:response productsResponse
+type productsResponseWrapper struct {
+	// All products in the system
+	// in: body
+	Body []data.Product
+}
+
+// swagger:response noContent
+type noContentWrapper struct {
+}
+
+// swagger:parameters deleteProduct
+type productIdParameterWrapper struct {
+	// The id of the product to delete from the database
+	// in: path
+	// required: true
+	ID int `json:"id"`
+}
+
+// Prodcuts is a http.Handler
 type Products struct {
 	l *log.Logger
 }
 
 func NewProduct(l *log.Logger) *Products {
 	return &Products{l}
-}
-
-func (p *Products) GetProducts(responseWriter http.ResponseWriter, request *http.Request) {
-	p.l.Println("Handle GET products")
-	productList := data.GetProducts()
-	err := productList.ToJSON(responseWriter)
-	if err != nil {
-		http.Error(responseWriter, "Unable to marshal json", http.StatusInternalServerError)
-	}
-}
-
-func (p *Products) AddProduct(responseWriter http.ResponseWriter, request *http.Request) {
-	p.l.Println("Handle POST product")
-	prod := request.Context().Value(KeyProduct{}).(*data.Product)
-	data.AddProduct(prod)
-}
-
-func (p *Products) UpdateProducts(responseWriter http.ResponseWriter, request *http.Request) {
-	p.l.Println("Handle PUT product")
-	vars := mux.Vars(request)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(responseWriter, "Unable to convert id to number", http.StatusBadRequest)
-		return
-	}
-	prod := request.Context().Value(KeyProduct{}).(*data.Product)
-	err = data.UpdateProduct(id, prod)
-	if err == data.ErrProductNotFound {
-		http.Error(responseWriter, "Product not found", http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		http.Error(responseWriter, "Product not found", http.StatusInternalServerError)
-		return
-	}
 }
 
 type KeyProduct struct{}

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/nguyentruongngoclan/learngo/handlers"
 )
@@ -28,7 +29,14 @@ func main() {
 	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/", productHandler.AddProduct)
 	postRouter.Use(productHandler.MiddlewareValidateProduct)
+	// deleteRouter will serve only DELETE methods
+	deleteRouter := serveMux.Methods(http.MethodDelete).Subrouter()
+	deleteRouter.HandleFunc("/{id:[0-9]+", productHandler.DeleteProduct)
 
+	opts := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
+	docHandler := middleware.Redoc(opts, nil)
+	getRouter.Handle("/docs", docHandler)
+	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
 	server := &http.Server{
 		Addr:         ":9090",
 		Handler:      serveMux,
